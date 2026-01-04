@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Տվյալների հավաքագրում</title>
+    <style>
+        body { font-family: Arial; max-width: 600px; margin: 40px auto; padding: 20px; }
+        .container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #ccc; }
+        input, textarea, button { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; }
+        button { background: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background: #45a049; }
+        .entry { background: #f9f9f9; padding: 10px; margin: 10px 0; border-left: 4px solid #4CAF50; }
+        .export-btn { background: #2196F3; }
+        .clear-btn { background: #f44336; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>📋 Ֆորմա տվյալների հավաքագրման համար</h2>
+        
+        <input type="text" id="nameInput" placeholder="Անուն">
+        <input type="email" id="emailInput" placeholder="Էլ. փոստ">
+        <textarea id="messageInput" placeholder="Հաղորդագրություն" rows="4"></textarea>
+        
+        <button onclick="saveData()">💾 Պահպանել</button>
+        <button class="export-btn" onclick="exportData()">📥 Ներբեռնել տվյալները</button>
+        <button class="clear-btn" onclick="clearData()">🗑️ Մաքրել բոլորը</button>
+        
+        <h3>📊 Պահպանված տվյալներ․</h3>
+        <div id="dataList"></div>
+    </div>
+
+    <script>
+        // Տվյալների բազան (պահվում է բրաուզերում)
+        let database = [];
+        
+        // Էջի բեռնմանը կարդալ պահպանված տվյալները
+        window.onload = function() {
+            loadData();
+            displayData();
+        };
+        
+        // Տվյալների բեռնում LocalStorage-ից
+        function loadData() {
+            const saved = localStorage.getItem('myFormData');
+            if (saved) {
+                database = JSON.parse(saved);
+            }
+        }
+        
+        // Տվյալների պահպանում LocalStorage-ում
+        function saveToStorage() {
+            localStorage.setItem('myFormData', JSON.stringify(database));
+        }
+        
+        // Ցուցադրել տվյալները էջում
+        function displayData() {
+            const listDiv = document.getElementById('dataList');
+            listDiv.innerHTML = '';
+            
+            if (database.length === 0) {
+                listDiv.innerHTML = '<p>Դեռ տվյալներ չկան։</p>';
+                return;
+            }
+            
+            database.forEach((item, index) => {
+                const entryDiv = document.createElement('div');
+                entryDiv.className = 'entry';
+                entryDiv.innerHTML = `
+                    <strong>${index + 1}. ${item.name || 'Անանուն'}</strong><br>
+                    ${item.email ? `📧 ${item.email}<br>` : ''}
+                    ${item.message ? `💬 ${item.message}<br>` : ''}
+                    <small>${new Date(item.timestamp).toLocaleString()}</small>
+                    <button onclick="deleteEntry(${index})" style="float:right; padding: 3px 8px; background: #ff5555;">X</button>
+                `;
+                listDiv.appendChild(entryDiv);
+            });
+        }
+        
+        // Նոր տվյալների ավելացում
+        function saveData() {
+            const name = document.getElementById('nameInput').value.trim();
+            const email = document.getElementById('emailInput').value.trim();
+            const message = document.getElementById('messageInput').value.trim();
+            
+            if (!name && !email && !message) {
+                alert('Խնդրում եմ լրացրեք գոնե մեկ դաշտ');
+                return;
+            }
+            
+            const newEntry = {
+                id: Date.now(),
+                name: name,
+                email: email,
+                message: message,
+                timestamp: new Date().toISOString()
+            };
+            
+            database.push(newEntry);
+            saveToStorage();
+            displayData();
+            
+            // Մաքրել դաշտերը
+            document.getElementById('nameInput').value = '';
+            document.getElementById('emailInput').value = '';
+            document.getElementById('messageInput').value = '';
+            
+            alert('✅ Տվյալները պահպանված են');
+        }
+        
+        // Մուտքի ջնջում
+        function deleteEntry(index) {
+            if (confirm('Ջնջե՞լ այս մուտքը։')) {
+                database.splice(index, 1);
+                saveToStorage();
+                displayData();
+            }
+        }
+        
+        // Բոլոր տվյալների ներբեռնում JSON ֆայլով
+        function exportData() {
+            if (database.length === 0) {
+                alert('Ներբեռնելու տվյալներ չկան');
+                return;
+            }
+            
+            const dataStr = JSON.stringify(database, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `my_data_${new Date().toISOString().slice(0,10)}.json`;
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // Բոլոր տվյալների մաքրում
+        function clearData() {
+            if (confirm('Վստա՞հ եք, որ ցանկանում եք ջնջել ԲՈԼՈՐ տվյալները։')) {
+                database = [];
+                localStorage.removeItem('myFormData');
+                displayData();
+                alert('Բոլոր տվյալները ջնջված են');
+            }
+        }
+    </script>
+</body>
+</html>
